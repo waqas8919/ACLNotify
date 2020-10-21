@@ -4,6 +4,7 @@ import 'package:notify/dashboard.dart';
 import 'package:notify/model/user.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,18 +35,37 @@ class _MainPageState extends State<MainPage> {
   final FocusNode _passwordFocus = FocusNode();
   TextEditingController _nameController = new TextEditingController();
   TextEditingController _passwordController = new TextEditingController();
+  bool logincheck = false;
 
   final String apiUrl = 'http://182.176.157.77:7018/api/';
   bool _progressController = false;
   String loadingMessage = 'Login User...';
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
+  getRecords() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    int userid = sharedPreferences.getInt('userid');
+    int instid = sharedPreferences.getInt('instituteId');
+    String username = sharedPreferences.getString('userName');
+    String name = sharedPreferences.getString('name');
+    String token = sharedPreferences.getString('token');
+    User user = new User(userid, instid, username, name, token);
+
+    bool logintest = sharedPreferences.getBool('login');
+    print(logintest);
+    if (logintest) {
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (BuildContext context) => Dashboard(user)));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // _nameController = new TextEditingController();
-    // _passwordController = new TextEditingController();
+    setState(() {
+      getRecords();
+    });
   }
 
   @override
@@ -159,7 +179,10 @@ class _MainPageState extends State<MainPage> {
                 FadeAnimation(
                     2,
                     GestureDetector(
-                        onTap: () {
+                        onTap: () async {
+                          setState(() {
+                            logincheck = true;
+                          });
                           authenticateFromServer(
                               _nameController.text, _passwordController.text);
                         },
@@ -195,17 +218,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   void authenticateFromServer(String email, String password) async {
-    /*isDeviceConnected().then((internet) {
-      if (internet == null || !internet) {
-        Toast.show(
-            "Device is not connected to internet. Retry Login after connected.",
-            context,
-            duration: Toast.LENGTH_LONG,
-            gravity: Toast.BOTTOM);
-        return;
-      }
-    });*/
-
     String deviceToken = await _firebaseMessaging.getToken();
     print(deviceToken);
 
@@ -228,7 +240,14 @@ class _MainPageState extends State<MainPage> {
       String userName = parsedJson['urName'];
       String name = parsedJson['name'];
 
-      print(instituteId);
+      SharedPreferences sharedPreferences =
+          await SharedPreferences.getInstance();
+      sharedPreferences.setInt('userid', userId);
+      sharedPreferences.setInt('instituteId', instituteId);
+      sharedPreferences.setString('userName', userName);
+      sharedPreferences.setString('name', name);
+      sharedPreferences.setString('token', token);
+      sharedPreferences.setBool("login", logincheck);
 
       _navigateToHome(new User(userId, instituteId, userName, name, token));
     } else {
