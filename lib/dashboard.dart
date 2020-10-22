@@ -42,8 +42,23 @@ class _DashboardState extends State<Dashboard> {
           _showItemDialog(message);
         });
       },
+      //onBackgroundMessage: myBackgroundMessageHandler,
       onLaunch: (Map<String, dynamic> message) async {
-        print("onLaunch: $message");
+        setState(() async {
+          String msg = message['notification']['body'];
+
+          var noti = new ModelNotification(msg);
+
+          if (noti.notifyid != null) {
+            result = await helper.updateNotificationInfo(noti);
+          } else {
+            result = await helper.insertNotificationInfo(noti);
+          }
+
+          updateListView();
+
+          _showItemDialog(message);
+        });
       },
       onResume: (Map<String, dynamic> message) async {
         setState(() async {
@@ -72,6 +87,25 @@ class _DashboardState extends State<Dashboard> {
       print("Settings registered: $settings");
     });
   }
+
+  // Future<dynamic> myBackgroundMessageHandler(
+  //     Map<String, dynamic> message) async {
+  //   setState(() async {
+  //     String msg = message['notification']['body'];
+  //     print(msg);
+  //     var noti = new ModelNotification(msg);
+
+  //     if (noti.notifyid != null) {
+  //       result = await helper.updateNotificationInfo(noti);
+  //     } else {
+  //       result = await helper.insertNotificationInfo(noti);
+  //     }
+
+  //     updateListView();
+
+  //     //_showItemDialog(message);
+  //   });
+  // }
 
   Widget _buildDialog(BuildContext context, Map<String, dynamic> message) {
     return AlertDialog(
